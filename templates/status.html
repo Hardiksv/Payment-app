@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Payment Status - View the status of your payment.">
+    <meta name="author" content="Your Company Name">
+    <meta name="keywords" content="payment, status, success, failure, pending">
+    <title>Payment Status</title>
+
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
+
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f4f4f4;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .status {
+            font-size: 40px;
+            margin: 20px 0;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .pending {
+            color: #ffc107;
+        }
+
+        .failed {
+            color: #dc3545;
+        }
+
+        .unknown {
+            color: #6c757d;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: white;
+            background: #007bff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+
+        a:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Payment Status</h2>
+
+        <div class="status {% if status == 'success' %}success{% elif status == 'pending' %}pending{% else %}failed{% endif %}">
+            Status: {{ status.capitalize() }}
+        </div>
+
+        <div class="details">
+            <p>Amount: ₹{{ amount }}</p>
+            <p>Mobile: {{ mobile }}</p>
+            <p>Email: {{ email }}</p>
+            <p>Order ID: {{ order_id }}</p>
+            <p>UTR: {{ utr }}</p>
+            <p>Message: {{ message }}</p>
+        </div>
+
+        <a href="/">Go Back</a>
+        <a href="/history" class="btn">View History</a>
+    </div>
+
+</body>
+
+</html>
