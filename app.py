@@ -49,7 +49,7 @@ def pay():
         "user_token": API_KEY,
         "amount": amount,
         "order_id": order_id,
-        "redirect_url": "http://127.0.0.1:5000/payment-status",
+        "redirect_url": "https://9652-103-166-12-205.ngrok-free.app/payment-status",
         "remark1": email,
         "remark2": "Test transaction"
     }
@@ -78,7 +78,8 @@ def pay():
 
             if payment_url:
                 # Redirect the user to the payment gateway
-                return render_template('redirect.html', payment_url=payment_url)  
+                return redirect(payment_url)
+  
             else:
                 return "Payment URL not found!", 400
 
@@ -91,40 +92,50 @@ def pay():
 
 
 
-@app.route('/payment-status', methods=['GET', 'POST'])
+@app.route('/payment-status', methods=['POST'])
 def payment_status():
     """Handle payment status verification"""
-    if request.method == 'GET':
-        return "Invalid Request Method. Use POST.", 400
     
-    # Get order details from form data
+    # 🔥 Debug incoming request
+    print("Headers:", request.headers)
+    print("Form Data:", request.form)
+    print("JSON Data:", request.get_json())
+
+    # Get order details
     order_id = request.form.get('order_id')
     utr = request.form.get('utr')
-    
+
     if not order_id or not utr:
         return "Invalid payment data", 400
+
+    # Verification API
+    verification_url = "https://pay.imb.org.in/api/verify-payment"
     
-    # Verify payment with the gateway
-    verification_url = f"https://pay.imb.org.in/api/verify-payment?order_id={order_id}&utr={utr}"
+    payload = {
+        "order_id": order_id,
+        "utr": utr
+    }
     
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {API_KEY}"
     }
-    
+
     try:
-        response = requests.get(verification_url, headers=headers)
-        
+        # ✅ Use POST instead of GET
+        response = requests.post(verification_url, json=payload, headers=headers)
+
         if response.status_code == 200:
             payment_data = response.json().get('result', {})
             
+            # Extract payment details
             status = payment_data.get('status', 'failed')
             amount = payment_data.get('amount', '0')
             mobile = payment_data.get('customer_mobile', 'N/A')
             email = payment_data.get('remark1', 'N/A')
             message = payment_data.get('message', 'No message')
 
-            # Store in the database
+            # Store in SQLite DB
             conn = sqlite3.connect('payments.db')
             cursor = conn.cursor()
 
@@ -136,11 +147,11 @@ def payment_status():
             conn.commit()
             conn.close()
 
-            # Redirect to the history page after successful payment
+            # ✅ Redirect to history if payment is successful
             if status == "success":
                 return redirect(url_for('history'))
-            
-            # Render the status page with payment details
+
+            # ✅ Render status page with payment details
             return render_template(
                 'status.html',
                 status=status,
@@ -165,21 +176,37 @@ def payment_status():
 def process_payment():
     """Process payment and redirect to payment gateway"""
     
-    # Extract data from the form
-    amount = request.form.get('amount')
-    mobile = request.form.get('mobile')
-    email = request.form.get('email')
+    try:
+        # Extract and validate form data
+        amount = request.form.get('amount')
+        mobile = request.form.get('mobile')
+        email = request.form.get('email')
 
-    if not amount or not mobile or not email:
-        return "Invalid payment data!", 400
+        if not amount or not mobile or not email:
+            return "Invalid payment data!", 400
 
-    print("Storing in session:", amount, mobile, email)
-    # Store the data in session
-    session['amount'] = amount
-    session['mobile'] = mobile
-    session['email'] = email
+        # ✅ Data validation
+        if not amount.isdigit() or int(amount) <= 0:
+            return "Invalid amount!", 400
 
-    return redirect(url_for('pay'))
+        if not mobile.isdigit() or len(mobile) != 10:
+            return "Invalid mobile number!", 400
+
+        if '@' not in email or '.' not in email:
+            return "Invalid email!", 400
+
+        # Store data in session
+        print("Storing in session:", amount, mobile, email)
+        session['amount'] = amount
+        session['mobile'] = mobile
+        session['email'] = email
+
+        # Redirect to payment page
+        return redirect(url_for('pay'))
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return "An error occurred during payment processing.", 500
 
 @app.route('/history')
 def history():
